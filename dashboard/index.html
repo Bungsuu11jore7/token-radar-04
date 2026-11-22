@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Token Radar — pre-token protocols ranked by fitted launch value</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header>
+  <h1>Token Radar</h1>
+  <p class="sub">Every protocol DefiLlama tracks that records no token, ranked by what its launch would be worth — fitted on the traded protocols in the same snapshot, not on a hunch.</p>
+</header>
+
+<section id="kpis" aria-label="Model summary">
+  <div class="kpi"><span class="kpi-label">Value model</span><span class="kpi-value" id="kpi-fit">—</span><span class="kpi-note">log10(market cap) on log10(TVL), OLS on 128 traded protocols</span></div>
+  <div class="kpi"><span class="kpi-label">Held-out test</span><span class="kpi-value" id="kpi-heldout">—</span><span class="kpi-note">2-fold R² 0.22 / 0.14, walk-forward 0.02 — both beat the flat multiple</span></div>
+  <div class="kpi"><span class="kpi-label">Coverage</span><span class="kpi-value" id="kpi-cover">—</span><span class="kpi-note">340 board rows · 40/40 watchlist · 758 protocols accounted for</span></div>
+  <div class="kpi"><span class="kpi-label">Top expected value</span><span class="kpi-value" id="kpi-top">—</span><span class="kpi-note">implied launch value × token odds</span></div>
+</section>
+
+<section id="controls">
+  <input id="q" type="search" placeholder="Search name or slug…" aria-label="Search">
+  <select id="f-cat" aria-label="Category"><option value="">All categories</option></select>
+  <select id="f-verdict" aria-label="Verdict"><option value="">All verdicts</option><option>Farm</option><option>Thin</option><option>Skip</option></select>
+  <label><input id="f-watch" type="checkbox"> Watchlist only</label>
+  <span id="count"></span>
+</section>
+
+<main>
+  <table id="board">
+    <thead><tr>
+      <th data-k="rank">#</th><th data-k="name">Protocol</th><th data-k="category">Category</th>
+      <th data-k="chains">Chains</th><th data-k="tvl_usd">TVL</th><th data-k="change_7d">7d</th>
+      <th data-k="age_days">Age</th><th data-k="implied_usd">Implied</th><th data-k="odds">Odds</th>
+      <th data-k="expected_usd">Expected</th><th data-k="farm_cost_usd">Farm cost</th><th data-k="verdict">Verdict</th>
+    </tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+
+  <aside id="detail" hidden>
+    <button id="detail-close" aria-label="Close detail">×</button>
+    <h2 id="d-name"></h2>
+    <dl id="d-facts"></dl>
+    <h3>Farm plan — costed</h3>
+    <ol id="d-steps"></ol>
+    <p id="d-net"></p>
+  </aside>
+</main>
+
+<section id="method">
+  <h2>How the value is fitted</h2>
+  <p>Implied value is a comps fit on the snapshot's own traded protocols: <code>log10(market cap) = 3.025 + 0.522 · log10(TVL)</code>, ordinary least squares on the 128 traded protocols that record a positive market cap and TVL. Sixteen traded protocols record a market cap of zero or less and are dropped from the fit — they are named in the integrity strip below.</p>
+  <p>Token odds are the share of peers of the same age that record a token, counted from all 758 protocols: under 90 days 4% (2 of 53), 90 days to 1 year 10% (11 of 107), 1 to 2 years 12% (22 of 183), 2 to 4 years 22% (50 of 228), over 4 years 28% (21 of 74); age unknown 19% overall. Expected value is implied value × odds, and the board ranks by it.</p>
+  <h3>Held-out test (the fit is kept only because it passes this)</h3>
+  <p>Split the 128 traded protocols in two by slug (even/odd) and fit on one half, test on the other: R² 0.22 and 0.14, median error 0.55 and 0.51 dex. A flat multiple (one median market-cap-to-TVL ratio for all) scores R² 0.03 and median error 0.71 dex on the same splits, so the fitted slope earns its keep. Walk-forward — fit on protocols listed before February 2024, test on those listed after: R² 0.02, median error 0.48 dex, against a flat multiple of −0.27 and 0.72 dex on the same split. The young cohort is noisy on its own — its own fit scores R² 0.07 — so the board's implied values for young protocols carry wider uncertainty. The model is kept on the 2-fold test, and the walk-forward limit is stated here rather than hidden.</p>
+  <h3>Terms that were tried and dropped</h3>
+  <p>Age, 7-day growth, category dummies, per-category multiples and a quadratic TVL term were each tested the same held-out way and kept nothing: age and growth score R² 0.22/0.05 across the folds, category dummies 0.00/0.06, per-category multiples below zero. The model keeps TVL alone because the held-out test says the rest is noise on this snapshot.</p>
+  <h3>Farm costs (estimates, November 2026)</h3>
+  <p>Gas per interaction: Ethereum $8.00, Base / Arbitrum / Optimism $0.50, Solana $0.05, BSC $0.30, Polygon $0.10, Avalanche $0.40, any other chain $1.00; one bridge $12.00 when the protocol's first chain is neither Ethereum nor Solana. Capital at work is $1,000 / $500 / $100 by TVL tier (≥$1B / ≥$100M / below) and comes back on exit — it is not a cost. Breakeven share is total farm cost divided by expected value. The verdict combines two risks: the launch may never happen — token odds under 5% (a protocol listed under 90 days launches 4% of the time) is a Skip whatever the cost — and the breakeven share: over 1% is a Skip, over 0.01% is Thin, otherwise Farm. On this board: 234 Farm, 69 Thin, 37 Skip.</p>
+  <h3>Limits, stated plainly</h3>
+  <p>The snapshot carries no parent-protocol field, so the watchlist's parent check cannot be re-run below the floor — a below-floor protocol could still be a wrapped or staked product its name does not betray. “Records no token” means DefiLlama's record carries none, never that the protocol has none. Gas figures are estimates, not quotes. Expected value is the model's claim, not a promise.</p>
+</section>
+
+<section id="integrity">
+  <h2>Integrity strip</h2>
+  <p>No protocol name is ever special-cased: the same functions score every row, and the value follows only from TVL, listing age and the fitted slope. All 758 protocols are accounted for: 340 on the board, 144 traded protocols set aside as the fit's training set, and 274 excluded — versioned releases 75, Bridge 47, Canonical Bridge 24, Liquid Staking 67, Liquid Restaking 7, Restaked BTC 3, CEX 45, wrapped/staked wording 6.</p>
+</section>
+
+<footer><p>Token Radar · built from the sealed DefiLlama snapshot of 2026-11-14 · values in USD · gas costs are estimates</p></footer>
+<script src="../data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
